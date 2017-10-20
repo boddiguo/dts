@@ -57,6 +57,7 @@ public class TxcDelectVisitorTest {
     System.out.println(visitor.getSelectSql());
     System.out.println(visitor.getTableOriginalValue());
     statement.setInt(1, 1);
+    System.out.println(visitor.getFullSql());
     statement.execute();
     visitor.executeAndGetRearImage(statement);
     System.out.println(visitor.getTablePresentValue());

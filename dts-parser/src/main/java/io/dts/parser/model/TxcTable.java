@@ -72,7 +72,7 @@ public class TxcTable {
 		for (int i = 0; i < lines.size(); i++) {
 			List<TxcField> line = lines.get(i).getFields();
 			for (TxcField obj : line) {
-				appender.append(obj.getFieldValue());
+				appender.append(obj.getFieldName() + "=" + obj.getFieldValue()).append(",");
 			}
 		}
 		return appender.toString();
