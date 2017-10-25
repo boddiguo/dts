@@ -1,9 +1,4 @@
-package io.dts.parser.vistor.base;
-
-import com.alibaba.druid.sql.SQLUtils;
-import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
-import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
+package io.dts.parser.vistor.mysql;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -15,7 +10,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import com.alibaba.druid.sql.SQLUtils;
+import com.alibaba.druid.sql.ast.SQLExpr;
+import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlOutputVisitor;
+import com.alibaba.druid.sql.visitor.SQLASTOutputVisitor;
+
 import io.dts.common.common.exception.DtsException;
+import io.dts.parser.DtsSQLStatement;
+import io.dts.parser.TxcObjectWapper;
 import io.dts.parser.constant.SqlType;
 import io.dts.parser.model.TxcColumnMeta;
 import io.dts.parser.model.TxcField;
@@ -23,15 +25,10 @@ import io.dts.parser.model.TxcLine;
 import io.dts.parser.model.TxcTable;
 import io.dts.parser.model.TxcTableMeta;
 import io.dts.parser.vistor.ITxcVisitor;
-import io.dts.parser.vistor.support.ISQLStatement;
-import io.dts.parser.vistor.support.TxcObjectWapper;
-import io.dts.parser.vistor.support.TxcTableMetaTools;
+import io.dts.parser.vistor.TxcTableMetaTools;
 
-/**
- * 
- * @author xiaoyan
- */
-public abstract class TxcBaseVisitor extends MySqlOutputVisitor implements ITxcVisitor {
+
+public abstract class AbstractDtsVisitor extends MySqlOutputVisitor implements ITxcVisitor {
 
   private String selectSql = null;
 
@@ -39,7 +36,7 @@ public abstract class TxcBaseVisitor extends MySqlOutputVisitor implements ITxcV
 
   private TxcTableMeta tableMeta = null;// table语法树
 
-  protected ISQLStatement node;
+  protected DtsSQLStatement node;
   private final TxcTable tableOriginalValue = new TxcTable(); // 保存SQL前置镜像
   private final TxcTable tablePresentValue = new TxcTable(); // 保存SQL后置镜像
 
@@ -50,7 +47,7 @@ public abstract class TxcBaseVisitor extends MySqlOutputVisitor implements ITxcV
 
   protected String tableNameAlias;
 
-  public TxcBaseVisitor(ISQLStatement node, List<Object> parameterSet) {
+  public AbstractDtsVisitor(DtsSQLStatement node, List<Object> parameterSet) {
     super(new StringBuilder());
     this.node = node;
     super.setParameters(parameterSet);
@@ -223,7 +220,7 @@ public abstract class TxcBaseVisitor extends MySqlOutputVisitor implements ITxcV
   }
 
   @Override
-  public ISQLStatement getSQLStatement() {
+  public DtsSQLStatement getSQLStatement() {
     return this.node;
   }
 
