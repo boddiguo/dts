@@ -1,25 +1,31 @@
-package io.dts.resourcemanager.log;
+/*
+ * Copyright 2014-2017 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
+ */
+package io.dts.resourcemanager.logmanager;
 
-import java.sql.Blob;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import javax.sql.DataSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.PreparedStatementCallback;
 import org.springframework.jdbc.core.RowCallbackHandler;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.transaction.TransactionStatus;
@@ -27,13 +33,10 @@ import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
 
-import io.dts.common.common.CommitMode;
 import io.dts.common.common.TxcXID;
 import io.dts.common.common.context.ContextStep2;
 import io.dts.common.common.exception.DtsException;
 import io.dts.common.protocol.ResultCode;
-import io.dts.common.util.blob.BlobUtil;
-import io.dts.parser.constant.SqlType;
 import io.dts.parser.constant.UndoLogMode;
 import io.dts.parser.model.RollbackInfor;
 import io.dts.parser.model.TxcField;
@@ -41,71 +44,19 @@ import io.dts.parser.model.TxcLine;
 import io.dts.parser.model.TxcRuntimeContext;
 import io.dts.parser.model.TxcTable;
 import io.dts.parser.model.TxcTableMeta;
-import io.dts.parser.undo.ITxcUndoSqlBuilder;
 import io.dts.parser.vistor.support.TxcTableMetaTools;
-import io.dts.resourcemanager.help.DataSourceHolder;
-import io.dts.resourcemanager.help.SqlExecuteHelper;
+import io.dts.resourcemanager.helper.DataSourceHolder;
+import io.dts.resourcemanager.undo.DtsUndo;
 
 /**
- * Created by guoyubo on 2017/9/27.
+ * @author liushiming
+ * @version BranchRollbackLogManager.java, v 0.0.1 2017年10月24日 下午3:57:23 liushiming
  */
-public class DtsLogManager implements IDtsLogManager {
-
-  private static final Logger logger = LoggerFactory.getLogger(DtsLogManager.class);
-
-
-  private static String txcLogTableName = "txc_undo_log";
-
-  private static final IDtsLogManager logManager = new DtsLogManager();
-
-  private DtsLogManager() {}
-
-
-  public static IDtsLogManager getInstance() {
-    return logManager;
-  }
-
-  public static Integer insertUndoLog(final Connection connection,
-      final TxcRuntimeContext txcContext) throws SQLException {
-    String xid = txcContext.getXid();
-    long branchID = txcContext.getBranchId();
-    long globalXid = TxcXID.getGlobalXID(xid, branchID);
-    String serverAddr = txcContext.getServer();
-
-    StringBuilder insertSql = new StringBuilder("INSERT INTO ");
-    insertSql.append(txcLogTableName);
-    insertSql.append("(id, xid, branch_id, rollback_info, ");
-    insertSql.append("gmt_create, gmt_modified, status, server)");
-    insertSql.append(" VALUES(");
-    insertSql.append("?,"); // id
-    insertSql.append("?,"); // xid
-    insertSql.append("?,"); // branch_id
-    insertSql.append("?,"); // rollback_info
-    insertSql.append("?,"); // gmt_create
-    insertSql.append("?,"); // gmt_modified
-    insertSql.append(txcContext.getStatus()); // status
-    insertSql.append(",?)"); // server
-
-    return SqlExecuteHelper.executeSql(connection, insertSql.toString(),
-        new PreparedStatementCallback<Integer>() {
-          @Override
-          public Integer doInPreparedStatement(final PreparedStatement pst) throws SQLException {
-            pst.setLong(1, globalXid);
-            pst.setString(2, xid);
-            pst.setLong(3, branchID);
-            pst.setBlob(4, BlobUtil.string2blob(txcContext.encode()));
-            java.sql.Timestamp currentTime = new java.sql.Timestamp(System.currentTimeMillis());
-            pst.setTimestamp(5, currentTime);
-            pst.setTimestamp(6, currentTime);
-            pst.setString(7, serverAddr);
-            return pst.executeUpdate();
-          }
-        });
-
-  }
+public class BranchRollbackLogManager extends DtsLogManagerImpl {
+  private static final Logger logger = LoggerFactory.getLogger(BranchRollbackLogManager.class);
 
   @Override
-  public void branchRollback(final ContextStep2 context) throws SQLException {
+  public void branchRollback(ContextStep2 context) throws SQLException {
     // 根据dbName取注册的datasource
     DataSource datasource = DataSourceHolder.getDataSource(context.getDbname());
     DataSourceTransactionManager tm = new DataSourceTransactionManager(datasource);
@@ -135,7 +86,6 @@ public class DtsLogManager implements IDtsLogManager {
             } catch (Exception e) {
               ; // 吞掉
             }
-
             if (tablemeta == null) {
               DataSource datasource = null;
               Connection conn = null;
@@ -149,11 +99,9 @@ public class DtsLogManager implements IDtsLogManager {
                 }
               }
             }
-
             o.setTableMeta(tablemeta);
             p.setTableMeta(tablemeta);
           }
-
           logger.info(String.format("[logid:%d:xid:%s:branch:%d]", undolog.getId(),
               undolog.getXid(), undolog.getBranchId()));
           for (int i = undolog.getInfor().size(); i > 0; i--) {
@@ -162,7 +110,7 @@ public class DtsLogManager implements IDtsLogManager {
             checkDirtyRead(template, info);
 
             List<String> rollbackSqls =
-                ITxcUndoSqlBuilder.createTxcUndoBuilder(info).buildRollbackSql();
+                DtsUndo.createDtsundo(info).buildRollbackSql();
             logger.info("the rollback sql is " + rollbackSqls);
             if (!CollectionUtils.isEmpty(rollbackSqls)) {
               template.batchUpdate(rollbackSqls.toArray(new String[rollbackSqls.size()]));
@@ -267,137 +215,7 @@ public class DtsLogManager implements IDtsLogManager {
     return t;
   }
 
-  @Override
-  public void branchCommit(List<ContextStep2> contexts) throws SQLException {
-    // RT
-    Iterator<ContextStep2> it = contexts.iterator();
-    while (it.hasNext()) {
-      ContextStep2 c = it.next();
-      if (c.getCommitMode().getValue() == CommitMode.COMMIT_RETRY_MODE.getValue()) {
-        SqlExecuteHelper.executeSql(c.getDbname(), c.getRetrySql());
-        it.remove();
-      }
-    }
-
-    // AT
-    Map<String, List<ContextStep2>> maps = new HashMap<String, List<ContextStep2>>();
-    for (ContextStep2 c : contexts) {
-      List<ContextStep2> list = maps.get(c.getDbname());
-      if (list == null) {
-        list = new ArrayList<ContextStep2>();
-        maps.put(c.getDbname(), list);
-      }
-      list.add(c);
-    }
-
-    for (Map.Entry<String, List<ContextStep2>> entry : maps.entrySet()) {
-      String dbname = entry.getKey();
-      List<ContextStep2> ids = entry.getValue();
-      branchCommit(ids, dbname);
-    }
-  }
-
-  private void branchCommit(List<ContextStep2> contexts, String dbName) throws SQLException {
-    // 根据dbName取注册的datasource
-    DataSource datasource = DataSourceHolder.getDataSource(dbName);
-    DataSourceTransactionManager tm = new DataSourceTransactionManager(datasource);
-    TransactionTemplate transactionTemplate = new TransactionTemplate(tm);
-    final JdbcTemplate template = new JdbcTemplate(datasource);
-
-    transactionTemplate.execute(new TransactionCallbackWithoutResult() {
-      @Override
-      protected void doInTransactionWithoutResult(TransactionStatus status) {
-        for (final ContextStep2 c : contexts) {
-          try {
-            long gid = TxcXID.getGlobalXID(c.getXid(), c.getBranchId());
-
-            // 针对delete操作延迟删除数据
-            TxcRuntimeContext undos = getTxcRuntimeContexts(gid, template);
-            if (undos == null) {
-              return;
-            }
-
-            //
-            for (RollbackInfor infor : undos.getInfor()) {
-              if (infor.getSqlType() == SqlType.DELETE) {
-                TxcTable oriTable = infor.getOriginalValue();
-
-                if (oriTable.getLinesNum() == 0) {
-                  continue;
-                }
-
-                String sql = getDeleteSql(oriTable);
-                logger.info("delete sql: " + sql);
-                template.execute(sql);
-              }
-            }
-            // 删除事务锁
-            // TxcActivityInfo.deleteXLock(c.getXid(), template);
-          } catch (Exception ex) {
-            status.setRollbackOnly();
-            throw new DtsException(ex);
-          }
-        }
-
-
-        // 删除undolog
-        String deleteSql = getDeleteUndoLogSql(contexts);
-        logger.info("delete undo log sql" + deleteSql);
-        template.execute(deleteSql);
-
-      }
-    });
-  }
-
-  private TxcRuntimeContext getTxcRuntimeContexts(final long gid, final JdbcTemplate template) {
-    String sql = String.format("select * from %s where status = 0 && " + "id = %d order by id desc",
-        txcLogTableName, gid);
-    List<TxcRuntimeContext> undos = SqlExecuteHelper.querySql(template, new RowMapper() {
-      @Override
-      public TxcRuntimeContext mapRow(ResultSet rs, int rowNum) throws SQLException {
-        Blob blob = rs.getBlob("rollback_info");
-        String str = BlobUtil.blob2string(blob);
-        TxcRuntimeContext undoLogInfor = TxcRuntimeContext.decode(str);
-        return undoLogInfor;
-      }
-    }, sql);
-
-    if (undos == null) {
-      return null;
-    }
-
-    if (undos.size() == 0) {
-      return null;
-    }
-
-    if (undos.size() > 1) {
-      throw new DtsException("check txc_undo_log, trx info duplicate");
-    }
-    return undos.get(0);
-  }
-
-  private static String getDeleteSql(final TxcTable oriTable) {
-    String tableName = oriTable.getTableMeta().getTableName();
-    String pkName = oriTable.getTableMeta().getPkName();
-    List<TxcField> pkRows = oriTable.pkRows();
-
-    boolean firstFlag = true;
-    StringBuilder tryDeleteId = new StringBuilder();
-    for (TxcField field : pkRows) {
-      if (firstFlag) {
-        firstFlag = false;
-      } else {
-        tryDeleteId.append(",");
-      }
-      tryDeleteId.append(field.getFieldValue());
-    }
-
-    return String.format("DELETE FROM %s " + "WHERE %s IN (%s)", tableName, pkName,
-        tryDeleteId.toString());
-  }
-
-
-  private static String getDeleteUndoLogSql(final List<ContextStep2> contexts) {
+  private String getDeleteUndoLogSql(final List<ContextStep2> contexts) {
     StringBuilder sb = new StringBuilder();
     boolean flag = false;
     for (ContextStep2 c : contexts) {
@@ -412,18 +230,4 @@ public class DtsLogManager implements IDtsLogManager {
     return String.format("delete from %s where id in (%s) and status = %d", txcLogTableName,
         sb.toString(), UndoLogMode.COMMON_LOG.getValue());
   }
-
-  @Override
-  public void deleteUndoLog(ContextStep2 context, JdbcTemplate template) throws SQLException {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void deleteUndoLog(List<ContextStep2> contexts, JdbcTemplate template)
-      throws SQLException {
-    // TODO Auto-generated method stub
-
-  }
-
 }

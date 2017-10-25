@@ -31,8 +31,8 @@ import io.dts.common.common.TrxLockMode;
 import io.dts.common.common.TxcXID;
 import io.dts.common.common.context.ContextStep2;
 import io.dts.common.common.exception.DtsException;
-import io.dts.resourcemanager.help.TxcTrxConfig;
-import io.dts.resourcemanager.log.IDtsLogManager;
+import io.dts.resourcemanager.helper.TxcTrxConfig;
+import io.dts.resourcemanager.logmanager.DtsLogManager;
 import io.dts.resourcemanager.struct.TxcBranchStatus;
 import io.dts.resourcemanager.struct.TxcIsolation;
 
@@ -47,7 +47,6 @@ public class AtResourceManager extends BaseResourceManager {
   private static Map<Long, ContextStep2> currentTaskCommitedAt = Maps.newConcurrentMap();
 
   private static Map<String, TxcBranchStatus> currentTaskMap = Maps.newConcurrentMap();
-  private IDtsLogManager txcSqlLogManager = IDtsLogManager.getInstance();
   /**
    * 隔离级别
    */
@@ -100,7 +99,7 @@ public class AtResourceManager extends BaseResourceManager {
             list.add(context);
           }
           try {
-            txcSqlLogManager.branchCommit(list);
+            DtsLogManager.getInstance().branchCommit(list);
           } catch (SQLException e) {
             throw new DtsException(e);
           }
@@ -142,7 +141,7 @@ public class AtResourceManager extends BaseResourceManager {
           currentTaskCommitedAt.put(context.getGlobalXid(), context);
           break;
         case COMMIT_RETRY_MODE:
-          txcSqlLogManager.branchCommit(Arrays.asList(context));
+          DtsLogManager.getInstance().branchCommit(Arrays.asList(context));
           break;
         default:
           break;
@@ -187,7 +186,7 @@ public class AtResourceManager extends BaseResourceManager {
     }
     context.setGlobalXid(TxcXID.getGlobalXID(xid, branchId));
     try {
-      txcSqlLogManager.branchRollback(context);
+      DtsLogManager.getInstance().branchRollback(context);
     } catch (DtsException e) {
       throw e;
     } catch (SQLException e) {
