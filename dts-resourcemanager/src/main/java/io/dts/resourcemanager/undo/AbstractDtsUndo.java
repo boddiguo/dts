@@ -2,11 +2,11 @@ package io.dts.resourcemanager.undo;
 
 import java.util.List;
 
-import io.dts.parser.TxcObjectWapper;
-import io.dts.parser.model.RollbackInfor;
-import io.dts.parser.model.TxcField;
-import io.dts.parser.model.TxcLine;
-import io.dts.parser.model.TxcTable;
+import io.dts.parser.DtsObjectWapper;
+import io.dts.parser.struct.RollbackInfor;
+import io.dts.parser.struct.TxcField;
+import io.dts.parser.struct.TxcLine;
+import io.dts.parser.struct.TxcTable;
 
 public abstract class AbstractDtsUndo implements DtsUndo {
 
@@ -55,7 +55,7 @@ public abstract class AbstractDtsUndo implements DtsUndo {
       }
 
       appender.append(
-          TxcObjectWapper.jsonObjectDeserialize(field.getFieldType(), field.getFieldValue()));
+          DtsObjectWapper.jsonObjectDeserialize(field.getFieldType(), field.getFieldValue()));
     }
 
     return appender.toString();
@@ -91,7 +91,7 @@ public abstract class AbstractDtsUndo implements DtsUndo {
       appender.append('`');
       appender.append(" = ");
       appender.append(
-          TxcObjectWapper.jsonObjectDeserialize(field.getFieldType(), field.getFieldValue()));
+          DtsObjectWapper.jsonObjectDeserialize(field.getFieldType(), field.getFieldValue()));
     }
     return appender.toString();
   }

@@ -18,15 +18,15 @@ import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlEvalVisitorImpl;
 import com.alibaba.druid.sql.visitor.SQLEvalVisitor;
 import com.alibaba.druid.sql.visitor.SQLEvalVisitorUtils;
 import com.alibaba.druid.util.JdbcUtils;
+import com.google.common.base.CharMatcher;
 
 import io.dts.common.common.exception.DtsException;
+import io.dts.parser.DtsObjectWapper;
 import io.dts.parser.DtsSQLStatement;
-import io.dts.parser.TxcObjectWapper;
-import io.dts.parser.constant.DatabaseType;
-import io.dts.parser.model.TxcColumnMeta;
-import io.dts.parser.model.TxcTable;
-import io.dts.parser.model.TxcTableMeta;
-import io.dts.parser.util.SQLUtil;
+import io.dts.parser.struct.DatabaseType;
+import io.dts.parser.struct.TxcColumnMeta;
+import io.dts.parser.struct.TxcTable;
+import io.dts.parser.struct.TxcTableMeta;
 
 
 public class DtsInsertVisitor extends AbstractDtsVisitor {
@@ -38,7 +38,7 @@ public class DtsInsertVisitor extends AbstractDtsVisitor {
 
   @Override
   public boolean visit(final MySqlInsertStatement x) {
-    final String tableName = SQLUtil.getExactlyValue(x.getTableName().toString());
+    final String tableName = getExactlyValue(x.getTableName().toString());
     setTableName(tableName);
     setTableNameAlias(x.getAlias());
     return super.visit(x);
@@ -168,7 +168,7 @@ public class DtsInsertVisitor extends AbstractDtsVisitor {
           evalExpression(getSQLStatement().getDatabaseType(), itemsList.get(i), getParameters());
 
       attrName = String.format("%s.%s", tableName, attrName);
-      TxcObjectWapper.appendParamMarkerObject(attrName, valuePair.value, appender);
+      DtsObjectWapper.appendParamMarkerObject(attrName, valuePair.value, appender);
       return;
     }
   }
@@ -259,9 +259,13 @@ public class DtsInsertVisitor extends AbstractDtsVisitor {
       ValuePair valuePair =
           evalExpression(getSQLStatement().getDatabaseType(), itemsList.get(i), getParameters());
       attrName = String.format("%s.%s", tableName, attrName);
-      TxcObjectWapper.appendParamMarkerObject(attrName, valuePair.getValue(), appender);
+      DtsObjectWapper.appendParamMarkerObject(attrName, valuePair.getValue(), appender);
       return;
     }
+  }
+
+  public String getExactlyValue(final String value) {
+    return null == value ? null : CharMatcher.anyOf("[]`'\"").removeFrom(value);
   }
 
   private static class ValuePair {
