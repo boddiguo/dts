@@ -23,10 +23,10 @@ public interface ServerCluster {
   public String select();
 
 
-  public void registry(String port);
+  public Integer registry(int port);
 
   public static ServerCluster getServerCluster() {
-    return DefaultServerCluster.getInstance();
+    return ZookeeperServerCluster.getInstance();
   }
 
 }

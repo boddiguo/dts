@@ -28,22 +28,11 @@ public class RegisterMessage implements CommandCustomHeader, RequestMessage {
    */
   @CFNotNull
   private long tranId;
-
   /**
-   * 对于缺省模式（TXC Atom为数据源），这个域为dbKey；对于MT模式，这是用户自定义key
+   * 数据库名称
    */
-  private String key;
+  private String dbName;
 
-  /**
-   * 业务主键，用于强隔离。分支上报给server，自己修改了哪些表的哪些行的主键。格式如下： "tableName1:key1,key2,key3;tableName2:key1,key2"
-   */
-  private String businessKey;
-
-  /**
-   * 提交模式
-   */
-  @CFNotNull
-  private int commitMode;
 
   public long getTranId() {
     return tranId;
@@ -53,30 +42,12 @@ public class RegisterMessage implements CommandCustomHeader, RequestMessage {
     this.tranId = tranId;
   }
 
-  public String getKey() {
-    return key;
+  public String getDbName() {
+    return dbName;
   }
 
-  public void setKey(String key) {
-    this.key = key;
-  }
-
-  public String getBusinessKey() {
-    return businessKey;
-  }
-
-  public void setBusinessKey(String businessKey) {
-    this.businessKey = businessKey;
-  }
-
-
-
-  public int getCommitMode() {
-    return commitMode;
-  }
-
-  public void setCommitMode(int commitMode) {
-    this.commitMode = commitMode;
+  public void setDbName(String dbName) {
+    this.dbName = dbName;
   }
 
   @Override

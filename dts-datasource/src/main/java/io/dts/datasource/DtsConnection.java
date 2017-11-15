@@ -6,14 +6,13 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import io.dts.common.common.CommitMode;
-import io.dts.common.common.TxcXID;
-import io.dts.common.common.context.DtsContext;
+import io.dts.common.context.DtsContext;
+import io.dts.common.context.DtsXID;
 import io.dts.datasource.wrapper.DtsPrepareStatementWrapper;
 import io.dts.datasource.wrapper.DtsStatementWrapper;
 import io.dts.parser.struct.TxcRuntimeContext;
 import io.dts.resourcemanager.api.IDtsDataSource;
-import io.dts.resourcemanager.logmanager.DtsLogManagerImpl;
+import io.dts.resourcemanager.logmanager.DtsLogManager;
 
 /**
  * Created by guoyubo on 2017/9/20.
@@ -24,7 +23,7 @@ public class DtsConnection extends AbstractDtsConnection {
 
   private Connection connection;
 
-  private TxcRuntimeContext txcContext; // 事务SQL上下文
+  private TxcRuntimeContext txcContext;
 
 
   public DtsConnection(final DtsDataSource dtsDataSource, final Connection connection)
@@ -46,7 +45,7 @@ public class DtsConnection extends AbstractDtsConnection {
 
   @Override
   public CallableStatement prepareCall(final String sql) throws SQLException {
-    return null;
+    return getRawConnection().prepareCall(sql);
   }
 
 
@@ -59,17 +58,16 @@ public class DtsConnection extends AbstractDtsConnection {
   }
 
   private void registerBranch() throws SQLException {
-    if (!DtsContext.inTxcTransaction()) {
+    if (!DtsContext.getInstance().inTxcTransaction()) {
       return;
     }
     if (getAutoCommit() == true) {
       throw new SQLException("should set autocommit false first.");
     }
-    long branchId = dtsDataSource.getResourceManager().register(dtsDataSource.getDbName(),
-        CommitMode.COMMIT_IN_PHASE1);
+    long branchId = dtsDataSource.getResourceManager().register(dtsDataSource.getDbName());
     txcContext = new TxcRuntimeContext();
     txcContext.setBranchId(branchId);
-    txcContext.setXid(DtsContext.getCurrentXid());
+    txcContext.setXid(DtsContext.getInstance().getCurrentXid());
   }
 
   @Override
@@ -80,13 +78,12 @@ public class DtsConnection extends AbstractDtsConnection {
   @Override
   public void commit() throws SQLException {
     try {
-      if (DtsContext.inTxcTransaction()) {
+      if (DtsContext.getInstance().inTxcTransaction()) {
         // 日志写库
-        txcContext.setServer(TxcXID.getServerAddress(txcContext.getXid()));
+        txcContext.setServer(DtsXID.getServerAddress(txcContext.getXid()));
         txcContext.setStatus(UndoLogMode.COMMON_LOG.getValue());
-        DtsLogManagerImpl.insertUndoLog(this.getRawConnection(), txcContext);
+        DtsLogManager.getInstance().insertUndoLog(this.getRawConnection(), txcContext);
         getRawConnection().commit();
-        reportBranchStatus(true);
       } else {
         getRawConnection().commit();
       }
@@ -95,19 +92,12 @@ public class DtsConnection extends AbstractDtsConnection {
     }
   }
 
-  private void reportBranchStatus(final boolean success) {
-    if (DtsContext.inTxcTransaction()) {
-      dtsDataSource.getResourceManager().reportStatus(txcContext.getBranchId(), success,
-          dtsDataSource.getDbName(), null);
-    }
-  }
 
   @Override
   public void rollback() throws SQLException {
     try {
-      if (DtsContext.inTxcTransaction()) {
+      if (DtsContext.getInstance().inTxcTransaction()) {
         getRawConnection().rollback();
-        reportBranchStatus(false);
       } else {
         getRawConnection().rollback();
       }
@@ -140,13 +130,15 @@ public class DtsConnection extends AbstractDtsConnection {
   @Override
   public PreparedStatement prepareStatement(final String sql, final int resultSetType,
       final int resultSetConcurrency) throws SQLException {
-    return null;
+    PreparedStatement preparedStatement =
+        getRawConnection().prepareStatement(sql, resultSetType, resultSetConcurrency);
+    return new DtsPrepareStatementWrapper(this, preparedStatement, sql);
   }
 
   @Override
   public CallableStatement prepareCall(final String sql, final int resultSetType,
       final int resultSetConcurrency) throws SQLException {
-    return null;
+    return getRawConnection().prepareCall(sql, resultSetType, resultSetConcurrency);
   }
 
   @Override
@@ -159,31 +151,38 @@ public class DtsConnection extends AbstractDtsConnection {
   @Override
   public PreparedStatement prepareStatement(final String sql, final int resultSetType,
       final int resultSetConcurrency, final int resultSetHoldability) throws SQLException {
-    return null;
+    PreparedStatement preparedStatement = getRawConnection().prepareStatement(sql, resultSetType,
+        resultSetConcurrency, resultSetHoldability);
+    return new DtsPrepareStatementWrapper(this, preparedStatement, sql);
   }
 
   @Override
   public CallableStatement prepareCall(final String sql, final int resultSetType,
       final int resultSetConcurrency, final int resultSetHoldability) throws SQLException {
-    return null;
+    return getRawConnection().prepareCall(sql, resultSetType, resultSetConcurrency,
+        resultSetHoldability);
   }
 
   @Override
   public PreparedStatement prepareStatement(final String sql, final int autoGeneratedKeys)
       throws SQLException {
-    return null;
+    PreparedStatement preparedStatement =
+        getRawConnection().prepareStatement(sql, autoGeneratedKeys);
+    return new DtsPrepareStatementWrapper(this, preparedStatement, sql);
   }
 
   @Override
   public PreparedStatement prepareStatement(final String sql, final int[] columnIndexes)
       throws SQLException {
-    return null;
+    PreparedStatement preparedStatement = getRawConnection().prepareStatement(sql, columnIndexes);
+    return new DtsPrepareStatementWrapper(this, preparedStatement, sql);
   }
 
   @Override
   public PreparedStatement prepareStatement(final String sql, final String[] columnNames)
       throws SQLException {
-    return null;
+    PreparedStatement preparedStatement = getRawConnection().prepareStatement(sql, columnNames);
+    return new DtsPrepareStatementWrapper(this, preparedStatement, sql);
   }
 
   @Override

@@ -4,7 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import io.dts.common.common.context.DtsContext;
+import io.dts.common.context.DtsContext;
 import io.dts.datasource.DtsConnection;
 import io.dts.datasource.wrapper.executor.PreparedStatementExecutor;
 
@@ -22,12 +22,7 @@ public class DtsPrepareStatementWrapper extends AbstractDtsPrepareStatement {
 
   @Override
   public ResultSet executeQuery() throws SQLException {
-    try {
-      return new PreparedStatementExecutor(createStatementModel(getTargetSql()), getParameters())
-          .executeQuery();
-    } catch (Exception e) {
-      throw new SQLException(e);
-    }
+    return getRawStatement().executeQuery();
   }
 
 
@@ -53,7 +48,7 @@ public class DtsPrepareStatementWrapper extends AbstractDtsPrepareStatement {
 
   @Override
   public void addBatch() throws SQLException {
-    if (DtsContext.inTxcTransaction()) {
+    if (DtsContext.getInstance().inTxcTransaction()) {
       throw new UnsupportedOperationException("unsupport add batch in dts transaction");
     }
     getRawStatement().addBatch();
@@ -61,7 +56,7 @@ public class DtsPrepareStatementWrapper extends AbstractDtsPrepareStatement {
 
   @Override
   public void addBatch(final String sql) throws SQLException {
-    if (DtsContext.inTxcTransaction()) {
+    if (DtsContext.getInstance().inTxcTransaction()) {
       throw new UnsupportedOperationException("unsupport add batch in dts transaction");
     }
     getRawStatement().addBatch(sql);
@@ -69,7 +64,7 @@ public class DtsPrepareStatementWrapper extends AbstractDtsPrepareStatement {
 
   @Override
   public void clearBatch() throws SQLException {
-    if (DtsContext.inTxcTransaction()) {
+    if (DtsContext.getInstance().inTxcTransaction()) {
       throw new UnsupportedOperationException("unsupport clear batch in dts transaction");
     }
     getRawStatement().clearBatch();
@@ -77,7 +72,7 @@ public class DtsPrepareStatementWrapper extends AbstractDtsPrepareStatement {
 
   @Override
   public int[] executeBatch() throws SQLException {
-    if (DtsContext.inTxcTransaction()) {
+    if (DtsContext.getInstance().inTxcTransaction()) {
       throw new UnsupportedOperationException("unsupport execute batch in dts transaction");
     }
     return getRawStatement().executeBatch();

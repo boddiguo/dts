@@ -41,15 +41,15 @@ public class HeatBeatProcessor implements NettyRequestProcessor {
 
   private RemotingCommand heartbeat(ChannelHandlerContext ctx, RemotingCommand request)
       throws RemotingCommandException {
-    @SuppressWarnings("unused")
     HeartbeatRequestHeader header =
         (HeartbeatRequestHeader) request.decodeCommandCustomHeader(HeartbeatRequestHeader.class);
     ChannelInfo clientChannelInfo = new ChannelInfo(//
         ctx.channel(), //
+        header.getDbName(), //
         request.getLanguage(), //
         request.getVersion()//
     );
-    channelRepository.registerChannel("DEFAULT", clientChannelInfo);
+    channelRepository.registerChannel(clientChannelInfo);
     RemotingCommand response = RemotingCommand.createResponseCommand(HeartbeatResponseHeader.class);
     response.setCode(RemotingSysResponseCode.SUCCESS);
     return response;

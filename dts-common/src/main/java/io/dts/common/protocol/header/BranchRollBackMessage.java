@@ -41,19 +41,7 @@ public class BranchRollBackMessage implements CommandCustomHeader, RequestMessag
   private String appName;
 
   private String dbName;
-  /**
-   * 提交模式
-   */
-  @CFNotNull
-  private byte commitMode;
-  /**
-   * 删锁标记 0:不删锁 1:删锁
-   */
-  @CFNotNull
-  private byte isDelLock;
-  /**
-   * 用户自定义信息，MT服务可以把一阶段的一些用户数据上报给Server，Server在二阶段把这个信息再传下来； 这样MT服务二阶段可以节省一次查询
-   */
+
   private String udata = null;
 
   public String getServerAddr() {
@@ -94,22 +82,6 @@ public class BranchRollBackMessage implements CommandCustomHeader, RequestMessag
 
   public void setDbName(String dbName) {
     this.dbName = dbName;
-  }
-
-  public byte getCommitMode() {
-    return commitMode;
-  }
-
-  public void setCommitMode(byte commitMode) {
-    this.commitMode = commitMode;
-  }
-
-  public byte getIsDelLock() {
-    return isDelLock;
-  }
-
-  public void setIsDelLock(byte isDelLock) {
-    this.isDelLock = isDelLock;
   }
 
   public String getUdata() {

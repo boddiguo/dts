@@ -1,6 +1,5 @@
 package io.dts.resourcemanager.network;
 
-import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -10,14 +9,13 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Queues;
 
-import io.dts.common.common.TxcConstants;
-import io.dts.common.common.exception.DtsException;
-import io.dts.common.component.AbstractLifecycleComponent;
+import io.dts.common.api.DtsClientMessageSender;
+import io.dts.common.exception.DtsException;
 import io.dts.common.protocol.RequestCode;
 import io.dts.common.protocol.RequestMessage;
 import io.dts.common.protocol.heatbeat.HeartbeatRequestHeader;
-import io.dts.common.rpc.DtsClientMessageSender;
-import io.dts.common.util.thread.ThreadFactoryImpl;
+import io.dts.common.util.ThreadFactoryImpl;
+import io.dts.remoting.RemoteConstant;
 import io.dts.remoting.RemotingClient;
 import io.dts.remoting.exception.RemotingCommandException;
 import io.dts.remoting.exception.RemotingConnectException;
@@ -32,14 +30,14 @@ import io.dts.resourcemanager.network.processor.RmMessageProcessor;
 /**
  * Created by guoyubo on 2017/9/13.
  */
-public class DefaultDtsResourcMessageSender extends AbstractLifecycleComponent
-    implements DtsClientMessageSender {
+public class DefaultDtsResourcMessageSender implements DtsClientMessageSender {
 
   private final RemotingClient remotingClient;
   private final ScheduledExecutorService scheduledExecutorService;
   private final NettyClientConfig nettyClientConfig;
   private static DefaultDtsResourcMessageSender resourceManagerSender =
       new DefaultDtsResourcMessageSender();
+  private ResourceManager rm;
 
   private DefaultDtsResourcMessageSender() {
     this.nettyClientConfig = new NettyClientConfig();
@@ -53,6 +51,7 @@ public class DefaultDtsResourcMessageSender extends AbstractLifecycleComponent
   }
 
   public void registerResourceManager(ResourceManager rm) {
+    this.rm = rm;
     registerHeaderRequest(rm);
     registerBodyRequest(rm);
   }
@@ -63,7 +62,7 @@ public class DefaultDtsResourcMessageSender extends AbstractLifecycleComponent
     ExecutorService clientMessageExecutor =
         new ThreadPoolExecutor(nettyClientConfig.getClientCallbackExecutorThreads(),
             nettyClientConfig.getClientCallbackExecutorThreads(), 1000 * 60, TimeUnit.MILLISECONDS,
-            clientThreadPoolQueue, new ThreadFactoryImpl("ResourceMessageThread_"));
+            clientThreadPoolQueue, new ThreadFactoryImpl("RMThread_"));
     this.remotingClient.registerProcessor(RequestCode.HEADER_REQUEST, messageProcessor,
         clientMessageExecutor);
   }
@@ -74,29 +73,29 @@ public class DefaultDtsResourcMessageSender extends AbstractLifecycleComponent
     ExecutorService clientMessageExecutor =
         new ThreadPoolExecutor(nettyClientConfig.getClientCallbackExecutorThreads(),
             nettyClientConfig.getClientCallbackExecutorThreads(), 1000 * 60, TimeUnit.MILLISECONDS,
-            clientThreadPoolQueue, new ThreadFactoryImpl("ResourceMessageThread_"));
+            clientThreadPoolQueue, new ThreadFactoryImpl("RMThread_"));
     this.remotingClient.registerProcessor(RequestCode.BODY_REQUEST, messageProcessor,
         clientMessageExecutor);
   }
 
-  @Override
-  protected void doStart() {
+  public void start() {
     this.remotingClient.start();
     this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
       @Override
       public void run() {
         try {
           HeartbeatRequestHeader hearbeat = new HeartbeatRequestHeader();
+          hearbeat.setDbName(rm.getRegisterKey());
           DefaultDtsResourcMessageSender.this.invoke(hearbeat);
         } catch (Throwable e) {
-          // ignore
+          e.printStackTrace();
         }
       }
-    }, 5, 5, TimeUnit.SECONDS);
+    }, 0, 5, TimeUnit.SECONDS);
   }
 
-  @Override
-  protected void doStop() {
+
+  public void stop() {
     this.remotingClient.shutdown();
     this.scheduledExecutorService.shutdownNow();
   }
@@ -121,14 +120,7 @@ public class DefaultDtsResourcMessageSender extends AbstractLifecycleComponent
 
   @Override
   public <T> T invoke(RequestMessage msg) throws DtsException {
-    return this.invoke(msg, TxcConstants.RPC_INVOKE_TIMEOUT);
+    return this.invoke(msg, RemoteConstant.RPC_INVOKE_TIMEOUT);
   }
-
-  @Override
-  protected void doClose() throws IOException {
-
-  }
-
-
 
 }

@@ -33,9 +33,8 @@ import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
 
-import io.dts.common.common.TxcXID;
-import io.dts.common.common.context.ContextStep2;
-import io.dts.common.common.exception.DtsException;
+import io.dts.common.context.DtsXID;
+import io.dts.common.exception.DtsException;
 import io.dts.common.protocol.ResultCode;
 import io.dts.parser.struct.RollbackInfor;
 import io.dts.parser.struct.TxcField;
@@ -44,7 +43,8 @@ import io.dts.parser.struct.TxcRuntimeContext;
 import io.dts.parser.struct.TxcTable;
 import io.dts.parser.struct.TxcTableMeta;
 import io.dts.parser.vistor.DtsTableMetaTools;
-import io.dts.resourcemanager.helper.DataSourceHolder;
+import io.dts.resourcemanager.DataSourceHolder;
+import io.dts.resourcemanager.struct.ContextStep2;
 import io.dts.resourcemanager.struct.UndoLogMode;
 import io.dts.resourcemanager.undo.DtsUndo;
 
@@ -62,23 +62,20 @@ public class BranchRollbackLogManager extends DtsLogManagerImpl {
     DataSourceTransactionManager tm = new DataSourceTransactionManager(datasource);
     TransactionTemplate transactionTemplate = new TransactionTemplate(tm);
     final JdbcTemplate template = new JdbcTemplate(datasource);
-
     transactionTemplate.execute(new TransactionCallbackWithoutResult() {
       @Override
       protected void doInTransactionWithoutResult(TransactionStatus status) {
         try {
           // 查询事务日志
-          long gid = TxcXID.getGlobalXID(context.getXid(), context.getBranchId());
+          long gid = DtsXID.getGlobalXID(context.getXid(), context.getBranchId());
           TxcRuntimeContext undolog = getTxcRuntimeContexts(gid, template);
           if (undolog == null) {
             return;
           }
-
           for (RollbackInfor info : undolog.getInfor()) {
             // 设置表meta
             TxcTable o = info.getOriginalValue();
             TxcTable p = info.getPresentValue();
-
             String tablename = o.getTableName() == null ? p.getTableName() : o.getTableName();
             TxcTableMeta tablemeta = null;
             try {
@@ -108,35 +105,13 @@ public class BranchRollbackLogManager extends DtsLogManagerImpl {
             RollbackInfor info = undolog.getInfor().get(i - 1);
             // 检查脏写
             checkDirtyRead(template, info);
-
             List<String> rollbackSqls = DtsUndo.createDtsundo(info).buildRollbackSql();
             logger.info("the rollback sql is " + rollbackSqls);
             if (!CollectionUtils.isEmpty(rollbackSqls)) {
-              template.batchUpdate(rollbackSqls.toArray(new String[rollbackSqls.size()]));
+              String[] rollbackSqlArray = rollbackSqls.toArray(new String[rollbackSqls.size()]);
+              template.batchUpdate(rollbackSqlArray);
             }
-
-            // 针对不同隔离级别的特殊处理
-            // if (TxcResourceManagerImpl.getTxcResourceManager().getIsolationLevel() ==
-            // TxcIsolation.READ_COMMITED) {
-            // // 回滚
-            // switch (info.getSqlType()) {
-            // case DELETE:
-            // break;
-            // default:
-            // AbstractUndoSqlBuilder.createTxcUndoExcutor(info).rollback(template);
-            // break;
-            // }
-            //
-            // // 刪除事务锁
-            //// if (context.getLockMode().getValue() == TrxLockMode.DELETE_TRX_LOCK.getValue()) {
-            //// TxcActivityInfo.deleteXLock(undolog.getXid(), template);
-            //// }
-            // } else {
-            // // 回滚
-            // AbstractUndoSqlBuilder.createTxcUndoExcutor(info).rollback(template);
-            // }
           }
-
           // 删除undolog
           String deleteSql = getDeleteUndoLogSql(Arrays.asList(context));
           logger.info("delete undo log sql" + deleteSql);
@@ -176,7 +151,7 @@ public class BranchRollbackLogManager extends DtsLogManagerImpl {
       retLog.append("]");
 
       if (valueByLog.equals(valueBySql) == false) {
-        throw new DtsException(ResultCode.LOGICERROR.getValue(), "dirty read:" + retLog.toString());
+        throw new DtsException(ResultCode.ERROR.getValue(), "dirty read:" + retLog.toString());
       }
     } catch (Exception e) {
       throw new DtsException(e, "checkDirtyRead error:" + retLog.toString());

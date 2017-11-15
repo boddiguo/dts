@@ -64,8 +64,6 @@ public class BranchRollbackResultMessage implements CommandCustomHeader, Respons
     this.result = result;
   }
 
-
-
   @Override
   public void checkFields() throws RemotingCommandException {
 

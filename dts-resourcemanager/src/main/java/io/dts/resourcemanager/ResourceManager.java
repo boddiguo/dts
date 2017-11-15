@@ -13,8 +13,7 @@
  */
 package io.dts.resourcemanager;
 
-import io.dts.common.common.CommitMode;
-import io.dts.common.common.exception.DtsException;
+import io.dts.common.exception.DtsException;
 
 /**
  * @author liushiming
@@ -22,20 +21,17 @@ import io.dts.common.common.exception.DtsException;
  */
 public interface ResourceManager {
 
-  public long register(String key, CommitMode commitMode) throws DtsException;
+  public long register(String key) throws DtsException;
 
-  public void reportStatus(long branchId, boolean success, String key, String udata)
+  public String getRegisterKey();
+
+  public void branchCommit(String xid, long branchId, String key, String udata) throws DtsException;
+
+  public void branchRollback(String xid, long branchId, String key, String udata)
       throws DtsException;
 
-  public void reportUdata(String xid, long branchId, String key, String udata, boolean delay)
-      throws DtsException;
+  public static ResourceManager getInstance() {
+    return DataSourceResourceManager.newResourceManager();
+  }
 
-  public void branchCommit(String xid, long branchId, String key, String udata, int commitMode,
-      String retrySql) throws DtsException;
-
-  public void branchRollback(String xid, long branchId, String key, String udata, int commitMode)
-      throws DtsException;
-
-  public void branchRollback(String xid, long branchId, String key, String udata, int commitMode,
-      int isDelKey) throws DtsException;
 }

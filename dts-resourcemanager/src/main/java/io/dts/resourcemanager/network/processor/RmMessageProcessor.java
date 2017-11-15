@@ -8,12 +8,12 @@ import io.dts.common.protocol.header.BranchCommitMessage;
 import io.dts.common.protocol.header.BranchCommitResultMessage;
 import io.dts.common.protocol.header.BranchRollBackMessage;
 import io.dts.common.protocol.header.BranchRollbackResultMessage;
+import io.dts.common.util.NetUtil;
 import io.dts.remoting.CommandCustomHeader;
 import io.dts.remoting.netty.NettyRequestProcessor;
 import io.dts.remoting.protocol.RemotingCommand;
 import io.dts.remoting.protocol.RemotingSerializable;
 import io.dts.resourcemanager.ResourceManager;
-import io.dts.util.NetUtil;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
@@ -87,16 +87,13 @@ public class RmMessageProcessor implements NettyRequestProcessor {
     String servAddr = commitMessage.getServerAddr();
     String dbName = commitMessage.getDbName();
     String udata = commitMessage.getUdata();
-    int commitMode = commitMessage.getCommitMode();
-    String retrySql = commitMessage.getRetrySql();
-
     resultMessage.setBranchId(branchId);
     resultMessage.setTranId(tranId);
     try {
-      rm.branchCommit(servAddr + ":" + tranId, branchId, dbName, udata, commitMode, retrySql);
+      rm.branchCommit(servAddr + ":" + tranId, branchId, dbName, udata);
       resultMessage.setResult(ResultCode.OK.getValue());
     } catch (Exception e) {
-      resultMessage.setResult(ResultCode.SYSTEMERROR.getValue());
+      resultMessage.setResult(ResultCode.ERROR.getValue());
     }
   }
 
@@ -108,15 +105,13 @@ public class RmMessageProcessor implements NettyRequestProcessor {
     String servAddr = rollBackMessage.getServerAddr();
     String dbName = rollBackMessage.getDbName();
     String udata = rollBackMessage.getUdata();
-    int commitMode = rollBackMessage.getCommitMode();
-
     resultMessage.setBranchId(branchId);
     resultMessage.setTranId(tranId);
     try {
-      rm.branchRollback(servAddr + ":" + tranId, branchId, dbName, udata, commitMode);
+      rm.branchRollback(servAddr + ":" + tranId, branchId, dbName, udata);
       resultMessage.setResult(ResultCode.OK.getValue());
     } catch (Exception e) {
-      resultMessage.setResult(ResultCode.SYSTEMERROR.getValue());
+      resultMessage.setResult(ResultCode.ERROR.getValue());
     }
   }
 

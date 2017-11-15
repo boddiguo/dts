@@ -6,8 +6,8 @@ import java.sql.SQLException;
 import javax.sql.DataSource;
 
 import io.dts.parser.struct.DatabaseType;
+import io.dts.resourcemanager.DataSourceHolder;
 import io.dts.resourcemanager.ResourceManager;
-import io.dts.resourcemanager.helper.DataSourceHolder;
 
 /**
  * Created by guoyubo on 2017/9/20.
@@ -21,7 +21,7 @@ public class DtsDataSource extends AbstractDtsDataSource {
   private ResourceManager resourceManager;
 
 
-  public DtsDataSource(final DataSource dataSource, final String dbName) {
+  public DtsDataSource(final DataSource dataSource, String dbName) {
     this.dataSource = dataSource;
     this.dbName = dbName;
     DataSourceHolder.registerDataSource(dbName, dataSource);
@@ -58,6 +58,9 @@ public class DtsDataSource extends AbstractDtsDataSource {
   }
 
   public ResourceManager getResourceManager() {
+    if (resourceManager == null) {
+      resourceManager = ResourceManager.getInstance();
+    }
     return resourceManager;
   }
 
