@@ -13,31 +13,26 @@
  */
 package io.dts.springcloud;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
-import feign.RequestInterceptor;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 
+import io.dts.client.aop.DtsTransactionScaner;
 
 /**
  * @author liushiming
- * @version SpringCloudContextConfig.java, v 0.0.1 2017年11月20日 下午2:34:06 liushiming
+ * @version ContextHystrixAutoConfiguration.java, v 0.0.1 2017年11月22日 下午6:27:06 liushiming
  */
 @Configuration
-public class SpringCloudContextConfig extends WebMvcConfigurerAdapter {
-
-
-  @Override
-  public void addInterceptors(InterceptorRegistry registry) {
-    registry.addInterceptor(new SpringCloudContextInterceptor())//
-        .addPathPatterns("/*");
-    super.addInterceptors(registry);
-  }
+@ConditionalOnClass(HystrixCommand.class)
+@ConditionalOnBean(DtsTransactionScaner.class)
+public class ContextHystrixAutoConfiguration {
 
   @Bean
-  public RequestInterceptor requestInterceptor() {
-    return new SpringCloudContextInterceptor();
+  ContextHystrixConcurrencyStrategy contextHystrixConcurrencyStrategy() {
+    return new ContextHystrixConcurrencyStrategy();
   }
 }
