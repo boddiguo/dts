@@ -2,7 +2,7 @@ package io.dts.client.aop;
 
 import java.lang.reflect.Method;
 
-import io.dts.client.aop.annotation.DtsTransaction;
+import io.dts.client.annotation.DtsTransaction;
 
 
 public class MethodDesc {

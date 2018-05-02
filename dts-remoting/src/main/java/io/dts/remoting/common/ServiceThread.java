@@ -39,6 +39,7 @@ public abstract class ServiceThread implements Runnable {
 
     public ServiceThread() {
         this.thread = new Thread(this, this.getServiceName());
+//        this.thread.setDaemon(true);
     }
 
 

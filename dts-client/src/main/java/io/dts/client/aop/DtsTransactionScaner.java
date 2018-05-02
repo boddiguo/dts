@@ -15,7 +15,7 @@ import org.springframework.aop.framework.autoproxy.AbstractAutoProxyCreator;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.BeansException;
 
-import io.dts.client.aop.annotation.DtsTransaction;
+import io.dts.client.annotation.DtsTransaction;
 
 public class DtsTransactionScaner extends AbstractAutoProxyCreator {
   private static final Logger logger = LoggerFactory.getLogger(DtsTransactionScaner.class);

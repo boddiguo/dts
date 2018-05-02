@@ -21,7 +21,7 @@ import com.quancheng.examples.service.HelloService;
 import com.quancheng.saluki.boot.SalukiReference;
 import com.quancheng.saluki.core.common.RpcContext;
 
-import io.dts.client.aop.annotation.DtsTransaction;
+import io.dts.client.annotation.DtsTransaction;
 
 /**
  * @author liushiming

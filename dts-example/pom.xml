@@ -6,9 +6,11 @@
 	<artifactId>dts-example</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<modules>
-		<module>dts-example-api</module>
-		<module>dts-example-consumer</module>
-		<module>dts-example-provider</module>
+		<module>dts-client-example</module>
+		<module>dts-datasource-example</module>
+		<!--<module>dts-example-api</module>-->
+		<!--<module>dts-example-consumer</module>-->
+		<!--<module>dts-example-provider</module>-->
 	</modules>
 	<packaging>pom</packaging>
 

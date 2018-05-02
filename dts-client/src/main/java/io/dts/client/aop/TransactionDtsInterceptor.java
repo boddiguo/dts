@@ -10,7 +10,7 @@ import org.aopalliance.intercept.MethodInvocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.dts.client.aop.annotation.DtsTransaction;
+import io.dts.client.annotation.DtsTransaction;
 import io.dts.client.template.TxcCallback;
 import io.dts.client.template.TxcTransactionTemplate;
 

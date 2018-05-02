@@ -19,6 +19,13 @@
 		<module>dts-microservice-support</module>
 		<module>dts-example</module>
 	</modules>
+	<repositories>
+		<repository>
+			<id>dianrong</id>
+			<name>dianrong repository</name>
+			<url>http://nexus.dianrong.com/nexus/content/groups/public/</url>
+		</repository>
+	</repositories>
 	<properties>
 		<java_source_version>1.8</java_source_version>
 		<java_target_version>1.8</java_target_version>
@@ -81,7 +88,7 @@
 			<dependency>
 				<groupId>io.netty</groupId>
 				<artifactId>netty-all</artifactId>
-				<version>4.1.16.Final</version>
+				<version>4.0.24.Final</version>
 			</dependency>
 			<dependency>
 				<groupId>com.alibaba</groupId>

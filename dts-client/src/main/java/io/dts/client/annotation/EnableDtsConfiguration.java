@@ -11,7 +11,7 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package io.dts.client.aop.annotation;
+package io.dts.client.annotation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

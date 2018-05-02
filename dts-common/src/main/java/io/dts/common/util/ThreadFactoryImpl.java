@@ -14,7 +14,9 @@ public class ThreadFactoryImpl implements ThreadFactory {
 
   @Override
   public Thread newThread(Runnable r) {
-    return new Thread(r, threadNamePrefix + this.threadIndex.incrementAndGet());
+		Thread thread = new Thread(r, threadNamePrefix + this.threadIndex.incrementAndGet());
+//		thread.setDaemon(true);
+		return thread;
 
   }
 }

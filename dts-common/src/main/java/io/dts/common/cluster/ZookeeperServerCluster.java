@@ -77,13 +77,21 @@ public class ZookeeperServerCluster implements ServerCluster, PathChildrenCacheL
       client.start();
       initIdgenerator();
       initPathCache();
+			initClusters();
 
-    } catch (Exception e) {
+		} catch (Exception e) {
       LOGGER.error("ZKCfgSource Initial Exception, exception = {}", e);
     }
   }
 
-  private void initIdgenerator() {
+	private void initClusters() throws Exception {
+		List<String> pathList = client.getChildren().forPath(dtsServerParentNode);
+		for (String path : pathList) {
+			clusters.add(path);
+		}
+	}
+
+	private void initIdgenerator() {
     DistributedAtomicInteger atomicInteger = new DistributedAtomicInteger(client,
         dtsServerParentNode, new ExponentialBackoffRetry(1000, 1));
     midGenerator = new MIdGenerator(atomicInteger, 1);

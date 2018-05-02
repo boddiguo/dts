@@ -1,0 +1,2 @@
+#http\://io.dts.github/schema/dts.xsd=io/dts/client/config/dts-tx-0.1.xsd
+http\://io.dts.github/schema/dts/tx.xsd=META-INF/dts-tx-0.1.xsd
